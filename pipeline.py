@@ -25,7 +25,7 @@ def convert_seconds_to_hms(seconds):
 class Pipeline:
     def __init__(self, num_categories=5, num_points=100, knn_k=5, train_ratio=0.7, kmeans_iterations=10,
                  save_img=False, print_text=False,
-                 sample_n=100, simple=True, feature_dimension=5):
+                 sample_n=100, simple=True, feature_dimension=5, use_original_embeddings = False):
         self.g = Graph(num_categories, num_points, knn_k, train_ratio,
                        save_img=save_img, print_text=print_text)
 
@@ -41,6 +41,8 @@ class Pipeline:
         self.predicted_ft_d = feature_dimension
 
         self.kmeans_iterations = kmeans_iterations
+
+        self.use_original_embeddings = use_original_embeddings
 
     def run(self):
         if self.simple:
@@ -80,7 +82,17 @@ class Pipeline:
             ))
 
         print("Calculating features...")
-        fts = self.get_features(tv_wns)
+
+        if self.use_original_embeddings:
+            fts = self.g.positions
+        else:
+            fts = np.array(self.get_features(tv_wns))
+    
+        # fts = np.concatenate([self.g.positions, self.get_features(tv_wns)], axis=1)
+
+        self.predicted_ft_d = fts.shape[1]
+
+        print(f"fts dim: {fts.shape[1]}")
 
         # print(fts)
 
@@ -315,6 +327,8 @@ class Pipeline:
         centroids = {label: np.array([0.0 for _ in range(self.predicted_ft_d)]) for label in labels}
         counts = {label: 0 for label in labels}
 
+        print(f"labels size: {len(labels)}")
+
         # Calculate initial centroid positions
         for v in self.g.vertices.values():
             if v.labeled:
@@ -390,12 +404,14 @@ if __name__ == '__main__':
 
     parser.add_argument("-i", "--iter_kmeans", type=int, default=10, help="Kmeans Iterations")
 
-    parser.add_argument("--sample_n", default=100, type=int, help="Number of sampled stroke directions")
-    parser.add_argument("--hard", action="store_true")
-    parser.add_argument("-fd", "--feature_dimension", type=int, default=10, help="Feature dimension")
+    parser.add_argument("--sample_n", default=6400, type=int, help="Number of sampled stroke directions")
+    parser.add_argument("--hard", default=True, type=bool)
+    parser.add_argument("-fd", "--feature_dimension", type=int, default=640, help="Feature dimension")
 
     parser.add_argument("--text", action="store_true")
     parser.add_argument("--save_img", action="store_true")
+
+    parser.add_argument("--use_original_embeddings", default=False, type=bool)
 
     args = parser.parse_args()
 
@@ -406,5 +422,6 @@ if __name__ == '__main__':
                  sample_n=args.sample_n,
                  save_img=args.save_img,
                  print_text=args.text,
-                 simple=not args.hard, feature_dimension=args.feature_dimension)
+                 simple=not args.hard, feature_dimension=args.feature_dimension,
+                 use_original_embeddings = args.use_original_embeddings)
     p.run()

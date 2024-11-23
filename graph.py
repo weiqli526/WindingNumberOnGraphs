@@ -70,6 +70,8 @@ class Graph:
         self.splitter = generate_data.get_graph_spitter(self.num_categories, self.num_points)
         self.visualizer = graph_visualizer.GraphVisualizer(save_img=save_img)
 
+        self.positions = None
+
     def get_all_labels(self):
         labels = set()
         for v in self.vertices.values():
@@ -89,6 +91,8 @@ class Graph:
         self._generate_edges_by_knn(positions)
 
         self.strokes_ij = [(i, j) for (i, j), edge in self.edges.items() if edge.is_stroke()]
+
+        self.positions = positions
 
     def visualize_simple_graph(self, pre=False, suffix=""):
         # pre=True means show predicted labels
@@ -168,6 +172,7 @@ class Graph:
                 self.vertices[ID] = Point(ID, position, label, labeled=False)
         self._generate_edges_by_knn(positions)
         self.strokes_ij = [(i, j) for (i, j), edge in self.edges.items() if edge.is_stroke()]
+        self.positions = positions
 
     def _generate_edges_by_knn(self, positions):
         """
